@@ -8,6 +8,7 @@ import { MessageInbox } from './components/messages/MessageInbox';
 import { PrivateRoute } from './components/auth/PrivateRoute';
 import {LandingPage} from './components/pages/LandingPage'
 import { LogoutSuccess } from './components/pages/LogoutSuccess';
+import {SuperAdminDashboardPage} from './components/pages/SuperAdminDashboardPage';
 
 
 const App = () => {
@@ -26,6 +27,14 @@ const App = () => {
                 </DashboardLayout>
               </PrivateRoute>
             }
+          />
+          <Route 
+            path="/super-admin-dashboard" 
+            element={
+              <PrivateRoute>
+                <SuperAdminDashboardPage />
+              </PrivateRoute>
+            } 
           />
           <Route path="/logout" element={<LogoutSuccess />} />
         </Routes>

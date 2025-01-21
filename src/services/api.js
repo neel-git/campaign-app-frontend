@@ -86,3 +86,108 @@ export const practiceService = {
     }
   },
 };
+
+// Campaign service
+// export const campaignService = {
+//   createCampaign: async (campaignData) => {
+//     try {
+//       const response = await api.post("/campaigns/", campaignData);
+//       return response.data;
+//     } catch (error) {
+//       throw error.response?.data || error.message;
+//     }
+//   },
+
+//   getCampaigns: async () => {
+//     try {
+//       const response = await api.get("/campaigns/");
+//       return response.data;
+//     } catch (error) {
+//       throw error.response?.data || error.message;
+//     }
+//   },
+
+//   updateCampaign: async (id, campaignData) => {
+//     try {
+//       const response = await api.put(`/campaigns/${id}/`, campaignData);
+//       return response.data;
+//     } catch (error) {
+//       throw error.response?.data || error.message;
+//     }
+//   },
+
+//   deleteCampaign: async (id) => {
+//     try {
+//       const response = await api.delete(`/campaigns/${id}/`);
+//       return response.data;
+//     } catch (error) {
+//       throw error.response?.data || error.message;
+//     }
+//   },
+
+//   // Add this for user approvals
+//   approveUser: async (userId, practiceId) => {
+//     try {
+//       const response = await api.post(`/users/${userId}/approve/`, {
+//         practice_id: practiceId,
+//       });
+//       return response.data;
+//     } catch (error) {
+//       throw error.response?.data || error.message;
+//     }
+//   },
+
+//   rejectUser: async (userId, reason) => {
+//     try {
+//       const response = await api.post(`/users/${userId}/reject/`, { reason });
+//       return response.data;
+//     } catch (error) {
+//       throw error.response?.data || error.message;
+//     }
+//   },
+//   getPendingUsers: async () => {
+//     try {
+//       const response = await api.get("/users/pending/");
+//       return response.data;
+//     } catch (error) {
+//       throw error.response?.data || error;
+//     }
+//   },
+// };
+
+export const campaignService = {
+  createCampaign: async (campaignData) => {
+    // Simulate API call
+    await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate network delay
+    return {
+      ...campaignData,
+      id: Math.floor(Math.random() * 1000),
+      created_at: new Date().toISOString(),
+      status: campaignData.deliveryType === "SCHEDULED" ? "SCHEDULED" : "DRAFT",
+    };
+  },
+
+  getCampaigns: async () => {
+    // Simulate API call
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    return DUMMY_CAMPAIGNS;
+  },
+
+  getPendingUsers: async () => {
+    // Simulate API call
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    return DUMMY_PENDING_USERS;
+  },
+
+  approveUser: async (userId, practiceId) => {
+    // Simulate API call
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    return { success: true };
+  },
+
+  rejectUser: async (userId, reason) => {
+    // Simulate API call
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    return { success: true };
+  },
+};
