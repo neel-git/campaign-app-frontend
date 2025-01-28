@@ -34,13 +34,11 @@ export const authService = {
   signup: async (userData) => {
     try {
       await api.get("/auth/get_csrf_token/");
-      const response = await api.post("/auth/signup/", {
-        ...userData,
-        role: "Practice User", // Default role
-      });
+      const response = await api.post("/auth/signup/", userData);
+      console.log(response.data);
       return response.data;
     } catch (error) {
-      throw error.response?.data || error.message;
+      throw error.response?.data || error;
     }
   },
 
@@ -51,6 +49,59 @@ export const authService = {
       return response.data;
     } catch (error) {
       throw error.response?.data || error.message;
+    }
+  },
+  changePassword: async (oldPassword, newPassword) => {
+    try {
+      const response = await api.post("/auth/change_password/", {
+        old_password: oldPassword,
+        new_password: newPassword,
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error;
+    }
+  },
+
+  approveRequest: async (requestId, requestType) => {
+    try {
+      const response = await api.post(`/auth/${requestId}/approve_request/`, {
+        request_type: requestType,
+      });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+  rejectRequest: async (requestId, requestType, reason) => {
+    try {
+      const response = await api.post(`/auth/${requestId}/reject_request/`, {
+        request_type: requestType,
+        reason: reason,
+      });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  getPendingRequests: async () => {
+    try {
+      console.log('Making request to fetch pending requests');
+      const response = await api.get("/auth/pending_request/");
+      console.log('Pending requests response:', response);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error;
+    }
+  },
+
+  requestRoleChange: async (data) => {
+    try {
+      const response = await api.post("/auth/request_role_change/", data);
+      return response.data;
+    } catch (error) {
+      throw error;
     }
   },
   // login: async (credentials) => {
@@ -77,7 +128,7 @@ export const authService = {
 };
 
 export const practiceService = {
-  getActivePractices: async () => {
+  getPractices: async () => {
     try {
       const response = await api.get("/practice/");
       return response.data;
@@ -85,109 +136,138 @@ export const practiceService = {
       throw error.response?.data || error;
     }
   },
+
+  createPractice: async (practiceData) => {
+    try {
+      const response = await api.post("/practice/", practiceData);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error;
+    }
+  },
+
+  updatePractice: async (id, practiceData) => {
+    try {
+      const response = await api.put(`/practice/${id}/`, practiceData);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error;
+    }
+  },
+
+  deletePractice: async (id) => {
+    try {
+      await api.delete(`/practice/${id}/`);
+    } catch (error) {
+      throw error.response?.data || error;
+    }
+  },
+
+  togglePracticeStatus: async (id, isActive) => {
+    try {
+      const response = await api.patch(`/practice/${id}/`, {
+        is_active: isActive,
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error;
+    }
+  },
+
+  getUserPractice: async () => {
+    try {
+      const response = await api.get("/practice/my_practice/");
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
 };
 
-// Campaign service
-// export const campaignService = {
-//   createCampaign: async (campaignData) => {
-//     try {
-//       const response = await api.post("/campaigns/", campaignData);
-//       return response.data;
-//     } catch (error) {
-//       throw error.response?.data || error.message;
-//     }
-//   },
-
-//   getCampaigns: async () => {
-//     try {
-//       const response = await api.get("/campaigns/");
-//       return response.data;
-//     } catch (error) {
-//       throw error.response?.data || error.message;
-//     }
-//   },
-
-//   updateCampaign: async (id, campaignData) => {
-//     try {
-//       const response = await api.put(`/campaigns/${id}/`, campaignData);
-//       return response.data;
-//     } catch (error) {
-//       throw error.response?.data || error.message;
-//     }
-//   },
-
-//   deleteCampaign: async (id) => {
-//     try {
-//       const response = await api.delete(`/campaigns/${id}/`);
-//       return response.data;
-//     } catch (error) {
-//       throw error.response?.data || error.message;
-//     }
-//   },
-
-//   // Add this for user approvals
-//   approveUser: async (userId, practiceId) => {
-//     try {
-//       const response = await api.post(`/users/${userId}/approve/`, {
-//         practice_id: practiceId,
-//       });
-//       return response.data;
-//     } catch (error) {
-//       throw error.response?.data || error.message;
-//     }
-//   },
-
-//   rejectUser: async (userId, reason) => {
-//     try {
-//       const response = await api.post(`/users/${userId}/reject/`, { reason });
-//       return response.data;
-//     } catch (error) {
-//       throw error.response?.data || error.message;
-//     }
-//   },
-//   getPendingUsers: async () => {
-//     try {
-//       const response = await api.get("/users/pending/");
-//       return response.data;
-//     } catch (error) {
-//       throw error.response?.data || error;
-//     }
-//   },
-// };
-
 export const campaignService = {
-  createCampaign: async (campaignData) => {
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate network delay
-    return {
-      ...campaignData,
-      id: Math.floor(Math.random() * 1000),
-      created_at: new Date().toISOString(),
-      status: campaignData.deliveryType === "SCHEDULED" ? "SCHEDULED" : "DRAFT",
-    };
-  },
-
   getCampaigns: async () => {
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    return DUMMY_CAMPAIGNS;
+    try {
+      console.log("Making API request to /campaign/");
+      // This will automatically include creator's campaigns
+      const response = await api.get("/campaign/my_campaign/");
+      console.log("API response received:", response);
+      return response;
+    } catch (error) {
+      throw error;
+    }
   },
 
-  getPendingUsers: async () => {
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    return DUMMY_PENDING_USERS;
+  createCampaign: async (campaignData) => {
+    try {
+      const response = await api.post("/campaign/", campaignData);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
   },
 
-  approveUser: async (userId, practiceId) => {
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    return { success: true };
+  updateCampaign: async (campaignId, campaignData) => {
+    try {
+      const response = await api.put(`/campaign/${campaignId}/`, campaignData);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
   },
 
-  rejectUser: async (userId, reason) => {
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    return { success: true };
+  deleteCampaign: async (campaignId) => {
+    try {
+      await api.delete(`/campaign/${campaignId}/`);
+      return true;
+    } catch (error) {
+      throw error;
+    }
   },
+
+  sendCampaign: async (campaignId) => {
+    try {
+      const response = await api.post(`/campaign/${campaignId}/send/`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  getCampaignHistory: async (campaignId) => {
+    try {
+      const response = await api.get(`/campaign/${campaignId}/history/`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+};
+
+export const messageService = {
+  getMessages: async () => {
+    try {
+      const response = await api.get('/message/');
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  markAsRead: async (messageId) => {
+    try {
+      const response = await api.post(`/message/${messageId}/mark_read/`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  deleteMessage: async (messageId) => {
+    try {
+      await api.delete(`/message/${messageId}/delete/`);
+      return true;
+    } catch (error) {
+      throw error;
+    }
+  }
 };

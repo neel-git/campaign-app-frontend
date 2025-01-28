@@ -4,7 +4,15 @@ import { Fragment } from 'react';
 import { format } from 'date-fns';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 
-export const MessageDetail = ({ message, isOpen, onClose, onMarkAsRead }) => {
+export const MessageDetail = ({ message, isOpen, onClose, onMarkAsRead, onDelete }) => {
+  const formatDate = (dateString) => {
+    try {
+      return format(new Date(dateString), 'MMM d, yyyy h:mm a');
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return 'Date unavailable';
+    }
+  };
   return (
     <Transition appear show={isOpen} as={Fragment}>
       <Dialog as="div" className="relative z-50" onClose={onClose}>
@@ -35,10 +43,10 @@ export const MessageDetail = ({ message, isOpen, onClose, onMarkAsRead }) => {
                 <div className="flex justify-between items-start mb-4">
                   <div>
                     <Dialog.Title as="h3" className="text-lg font-semibold text-gray-900">
-                      {message.campaignName}
+                      {message.campaign_name}
                     </Dialog.Title>
                     <p className="text-sm text-gray-500">
-                      {format(new Date(message.receivedAt), 'MMM d, yyyy h:mm a')}
+                    {formatDate(message.created_at)}
                     </p>
                   </div>
                   <button
@@ -57,9 +65,9 @@ export const MessageDetail = ({ message, isOpen, onClose, onMarkAsRead }) => {
                   <input
                     type="radio"
                     id="markAsRead"
-                    checked={message.isRead}
+                    checked={message.is_read}
                     onChange={onMarkAsRead}
-                    disabled={message.isRead}
+                    disabled={message.is_read}
                     className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
                   />
                   <label 
@@ -71,6 +79,12 @@ export const MessageDetail = ({ message, isOpen, onClose, onMarkAsRead }) => {
                 </div>
               </Dialog.Panel>
             </Transition.Child>
+            <button
+              onClick={onDelete}
+              className="text-sm text-red-600 hover:text-red-800 transition-colors"
+            >
+              Delete Message
+            </button>
           </div>
         </div>
       </Dialog>

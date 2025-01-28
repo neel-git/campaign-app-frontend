@@ -6,32 +6,45 @@ import { Dialog } from '@headlessui/react';
 import { XMarkIcon, CalendarIcon, ClockIcon } from '@heroicons/react/24/outline';
 import { useDispatch, useSelector } from 'react-redux';
 import { addCampaign } from '../../store/slices/campaignSlice';
-import { campaignService } from '../../services/api';
+import { campaignService,practiceService } from '../../services/api';
 import toast from 'react-hot-toast';
+import { useState,useEffect } from 'react';
 
 const campaignSchema = Yup.object().shape({
   name: Yup.string()
     .required('Campaign name is required')
-    .min(3, 'Campaign name must be at least 3 characters'),
+    .min(5, 'Campaign name must be at least 5 characters')
+    .max(255, 'Campaign name must be less than 255 characters'),
   content: Yup.string()
     .required('Content is required')
     .min(10, 'Content must be at least 10 characters'),
-  description: Yup.string(),
-  campaignType: Yup.string().required('Campaign type is required'),
-  deliveryType: Yup.string().required('Delivery type is required'),
-  scheduledDate: Yup.date().when('deliveryType', {
-    is: 'SCHEDULED',
-    then: Yup.date().required('Schedule date is required')
-  }),
-  scheduledTime: Yup.string().when('deliveryType', {
-    is: 'SCHEDULED',
-    then: Yup.string().required('Schedule time is required')
-  }),
-  targetPractices: Yup.array().min(1, 'Select at least one practice'),
-  targetRoles: Yup.array().min(1, 'Select at least one role')
+  description: Yup.string()
+    .nullable(),
+  campaignType: Yup.string()
+    .required('Campaign type is required')
+    .oneOf(['DEFAULT', 'CUSTOM'], 'Invalid campaign type'),
+  deliveryType: Yup.string()
+    .required('Delivery type is required')
+    .oneOf(['IMMEDIATE', 'SCHEDULED'], 'Invalid delivery type'),
+  scheduledDate: Yup.lazy((deliveryType) => {
+    return deliveryType === 'SCHEDULED'
+      ? Yup.date()
+            .required('Schedule date is required')
+            .min(new Date(), 'Schedule date must be in the future')
+        : Yup.date().nullable();
+    }),
+    scheduledTime: Yup.lazy((deliveryType) => {
+      return deliveryType === 'SCHEDULED'
+        ? Yup.string().required('Schedule time is required')
+        : Yup.string().nullable();
+    }),
+  targetPractices: Yup.array().default([]),
+  targetRoles: Yup.array()
+    .of(Yup.string())
+    .min(1, 'Select at least one role')
 });
 
-// Custom Field Wrapper Component
+
 const FormField = ({ label, name, type = 'text', as, placeholder, children, className = '', icon: Icon }) => (
   <div className={className}>
     <label htmlFor={name} className="block text-sm font-medium text-gray-700 mb-1">
@@ -70,48 +83,113 @@ const FormField = ({ label, name, type = 'text', as, placeholder, children, clas
   </div>
 );
 
-const CampaignForm = ({ isOpen, onClose }) => {
+export const CampaignForm = ({ isOpen, onClose, campaign, onSuccess}) => {
   const dispatch = useDispatch();
   const practices = useSelector(state => state.practices.practices);
   const user = useSelector(state => state.auth.user);
+  console.log(user);
+  const isSuperAdmin = user?.role === "Practice by Numbers Support";
+  const [userPractice, setUserPractice] = useState(null);
+  const [isLoadingPractice, setIsLoadingPractice] = useState(!isSuperAdmin);
+
+  // Fetch user's practice when component mounts
+  useEffect(() => {
+    const fetchUserPractice = async () => {
+      if (!isSuperAdmin) {
+        try {
+          setIsLoadingPractice(true);
+          const practice = await practiceService.getUserPractice();
+          setUserPractice(practice);
+          
+          if (!practice) {
+            toast.error('You are not assigned to any practice. Please contact an administrator.');
+          }
+        } catch (error) {
+          console.error('Error fetching user practice:', error);
+          toast.error('Failed to fetch practice information');
+        } finally {
+          setIsLoadingPractice(false);
+        }
+      }
+    };
+
+    fetchUserPractice();
+  }, [isSuperAdmin]);
 
   const initialValues = {
-    name: '',
-    description: '',
-    content: '',
-    campaignType: user?.role === 'UserRoleType.super_admin' ? 'DEFAULT' : 'CUSTOM',
-    deliveryType: 'IMMEDIATE',
-    scheduledDate: '',
-    scheduledTime: '',
-    targetPractices: [],
-    targetRoles: []
+    name: campaign?.name || '',
+    description: campaign?.description || '',
+    content: campaign?.content || '',
+    campaignType: campaign?.campaign_type || (isSuperAdmin ? 'DEFAULT' : 'CUSTOM'),
+    deliveryType: campaign?.delivery_type || 'IMMEDIATE',
+    scheduledDate: campaign?.scheduled_date ? new Date(campaign.scheduled_date).toISOString().split('T')[0] : '',
+    scheduledTime: campaign?.scheduled_date ? new Date(campaign.scheduled_date).toISOString().split('T')[1].slice(0, 5) : '',
+    targetPractices: campaign?.practice_associations?.map(pa => pa.practice_id) || [],
+    targetRoles: campaign?.target_roles || []
   };
 
-  const handleSubmit = async (values, { setSubmitting, resetForm }) => {
+  const handleSubmit = async (values, { setSubmitting, resetForm ,setFieldError}) => {
     try {
+      if (isSuperAdmin && (!values.targetPractices || values.targetPractices.length === 0)) {
+        setFieldError('targetPractices', 'Select at least one practice');
+        return;
+      }
+      const targetPractices = isSuperAdmin 
+      ? values.targetPractices.map(id => parseInt(id))
+      : userPractice ? [userPractice.id] : [];
+
       const formattedData = {
-        ...values,
-        scheduled_at: values.deliveryType === 'SCHEDULED' 
-          ? `${values.scheduledDate}T${values.scheduledTime}` 
-          : null
+        name: values.name,
+        content: values.content,
+        description: values.description || null,  // Handle empty description
+        campaign_type: isSuperAdmin ? 'DEFAULT' : 'CUSTOM',
+        delivery_type: values.deliveryType,
+        target_roles: values.targetRoles,
+        target_practices: targetPractices,
+        ...(values.deliveryType === 'SCHEDULED' && {
+          scheduled_date: `${values.scheduledDate}T${values.scheduledTime}:00Z`
+        })
       };
 
-      const response = await campaignService.createCampaign(formattedData);
-      dispatch(addCampaign(response));
-      toast.success('Campaign created successfully');
+      if (campaign) {
+        const response = await campaignService.updateCampaign(campaign.id, formattedData);
+        dispatch(updateCampaign(response));
+        toast.success('Campaign updated successfully');
+      } else {
+        const response = await campaignService.createCampaign(formattedData);
+        dispatch(addCampaign(response));
+        toast.success('Campaign created successfully');
+      }
+      await onSuccess(); // This should be fetchCampaigns passed down from parent
+      toast.success(`Campaign ${campaign ? 'updated' : 'created'} successfully`);
       resetForm();
       onClose();
     } catch (error) {
-      toast.error(error.message || 'Failed to create campaign');
+      console.error('Campaign operation error:', error);
+      toast.error(error.response?.data?.error || `Failed to ${campaign ? 'update' : 'create'} campaign`);
     } finally {
       setSubmitting(false);
     }
+    //   const response = await campaignService.createCampaign(formattedData);
+    //   dispatch(addCampaign(response));
+    //   toast.success('Campaign created successfully');
+    //   resetForm();
+    //   onClose();
+    // } catch (error) {
+    //   console.error('Cmapaign creation error:',error);
+    //   toast.error(error.response?.data?.error || 'Failed to create campaign');
+    // } finally {
+    //   setSubmitting(false);
+    // }
   };
 
-  const roleTypes = [
-    { id: 'admin', label: 'Admin' },
-    { id: 'practice_user', label: 'Practice User' }
-  ];
+  // Role types based on user role
+  const roleTypes = isSuperAdmin 
+    ? [
+        { id: 'Admin', label: 'Admin' },
+        { id: 'Practice User', label: 'Practice User' }
+      ]
+    : [{ id: 'Practice User', label: 'Practice User' }];
 
   return (
     <Dialog open={isOpen} onClose={onClose} className="relative z-[60]">
@@ -135,6 +213,7 @@ const CampaignForm = ({ isOpen, onClose }) => {
             initialValues={initialValues}
             validationSchema={campaignSchema}
             onSubmit={handleSubmit}
+            validationContext={{ userRole: user?.role }}
           >
             {({ isSubmitting, values }) => (
               <Form className="space-y-6">
@@ -161,13 +240,12 @@ const CampaignForm = ({ isOpen, onClose }) => {
                 />
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Campaign Type - Read only field based on user role */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Campaign Type
                     </label>
                     <div className="mt-1 block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-gray-500">
-                      {user?.role === 'UserRoleType.super_admin' ? 'Default Campaign' : 'Custom Campaign'}
+                      {isSuperAdmin ? 'Default Campaign' : 'Custom Campaign'}
                     </div>
                   </div>
 
@@ -201,26 +279,39 @@ const CampaignForm = ({ isOpen, onClose }) => {
                 )}
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Target Practices as Dropdown */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Target Practices
                     </label>
-                    <Field
-                      as="select"
-                      name="targetPractices"
-                      multiple={true}
-                      className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500"
-                    >
-                      {practices.map(practice => (
-                        <option key={practice.id} value={practice.id.toString()}>
-                          {practice.name}
-                        </option>
-                      ))}
-                    </Field>
-                    <p className="mt-1 text-sm text-gray-500">
-                      Hold Ctrl (Windows) or Command (Mac) to select multiple practices
-                    </p>
+                    {isSuperAdmin ? (
+                      <>
+                        <Field
+                          as="select"
+                          name="targetPractices"
+                          multiple={true}
+                          className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500"
+                        >
+                          {practices.map(practice => (
+                            <option key={practice.id} value={practice.id.toString()}>
+                              {practice.name}
+                            </option>
+                          ))}
+                        </Field>
+                        <p className="mt-1 text-sm text-gray-500">
+                          Hold Ctrl (Windows) or Command (Mac) to select multiple practices
+                        </p>
+                      </>
+                    ) : (
+                      <div className="mt-1 block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-gray-500">
+                        {/* We first check if we're still loading the practice info */}
+                        {isLoadingPractice ? (
+                          'Loading practice information...'
+                        ) : (
+                          /* Then we check if we have a userPractice */
+                          userPractice ? userPractice.name : 'No practice assigned'
+                        )}
+                      </div>
+                    )}
                     <ErrorMessage
                       name="targetPractices"
                       component="div"
@@ -228,7 +319,6 @@ const CampaignForm = ({ isOpen, onClose }) => {
                     />
                   </div>
 
-                  {/* Target Roles */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Target Roles
@@ -254,7 +344,6 @@ const CampaignForm = ({ isOpen, onClose }) => {
                   </div>
                 </div>
 
-                {/* Sticky footer with buttons */}
                 <div className="sticky bottom-0 bg-white pt-6 border-t mt-6">
                   <div className="flex justify-end space-x-3">
                     <button
@@ -264,12 +353,11 @@ const CampaignForm = ({ isOpen, onClose }) => {
                     >
                       Cancel
                     </button>
-                    <button
+                    <button 
                       type="submit"
-                      disabled={isSubmitting}
-                      className="px-4 py-2 text-sm font-medium text-white bg-purple-600 border border-transparent rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {isSubmitting ? 'Creating...' : 'Create Campaign'}
+                      className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      disabled={isSubmitting}>
+                      {isSubmitting ? (campaign ? 'Updating...' : 'Creating...') : (campaign ? 'Update Campaign' : 'Create Campaign')}
                     </button>
                   </div>
                 </div>
@@ -281,200 +369,3 @@ const CampaignForm = ({ isOpen, onClose }) => {
     </Dialog>
   );
 };
-
-export default CampaignForm;
-// import React from 'react';
-// import { Formik, Form, Field, ErrorMessage } from 'formik';
-// import * as Yup from 'yup';
-// import { Dialog } from '@headlessui/react';
-// import { XMarkIcon } from '@heroicons/react/24/outline';
-// import { useDispatch, useSelector } from 'react-redux';
-// import { addCampaign } from '../../store/slices/campaignSlice';
-// import { campaignService } from '../../services/api';
-// import toast from 'react-hot-toast';
-
-// const campaignSchema = Yup.object().shape({
-//   name: Yup.string()
-//     .required('Campaign name is required')
-//     .min(3, 'Campaign name must be at least 3 characters'),
-//   content: Yup.string()
-//     .required('Content is required')
-//     .min(10, 'Content must be at least 10 characters'),
-//   description: Yup.string(),
-//   campaignType: Yup.string().required('Campaign type is required'),
-//   deliveryType: Yup.string().required('Delivery type is required'),
-//   scheduledDate: Yup.date().when('deliveryType', {
-//     is: 'SCHEDULED',
-//     then: Yup.date().required('Schedule date is required')
-//   }),
-//   scheduledTime: Yup.string().when('deliveryType', {
-//     is: 'SCHEDULED',
-//     then: Yup.string().required('Schedule time is required')
-//   }),
-//   targetPractices: Yup.array().min(1, 'Select at least one practice'),
-//   targetRoles: Yup.array().min(1, 'Select at least one role')
-// });
-
-// const CampaignForm = ({ isOpen, onClose }) => {
-//   const dispatch = useDispatch();
-//   const practices = useSelector(state => state.practices.practices);
-
-//   const initialValues = {
-//     name: '',
-//     description: '',
-//     content: '',
-//     campaignType: 'DEFAULT',
-//     deliveryType: 'IMMEDIATE',
-//     scheduledDate: '',
-//     scheduledTime: '',
-//     targetPractices: [],
-//     targetRoles: []
-//   };
-
-//   const handleSubmit = async (values, { setSubmitting, resetForm }) => {
-//     try {
-//       const formattedData = {
-//         ...values,
-//         scheduled_at: values.deliveryType === 'SCHEDULED' 
-//           ? `${values.scheduledDate}T${values.scheduledTime}` 
-//           : null
-//       };
-
-//       const response = await campaignService.createCampaign(formattedData);
-//       dispatch(addCampaign(response));
-//       toast.success('Campaign created successfully');
-//       resetForm();
-//       onClose();
-//     } catch (error) {
-//       toast.error(error.message || 'Failed to create campaign');
-//     } finally {
-//       setSubmitting(false);
-//     }
-//   };
-
-//   return (
-//     <Dialog open={isOpen} onClose={onClose} className="relative z-50">
-//       <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
-      
-//       <div className="fixed inset-0 flex items-center justify-center p-4">
-//         <Dialog.Panel className="mx-auto max-w-3xl rounded bg-white p-6 w-full">
-//           <div className="flex justify-between items-center mb-4">
-//             <Dialog.Title className="text-lg font-medium">Create New Campaign</Dialog.Title>
-//             <button onClick={onClose} className="text-gray-400 hover:text-gray-500">
-//               <XMarkIcon className="h-6 w-6" />
-//             </button>
-//           </div>
-
-//           <Formik
-//             initialValues={initialValues}
-//             validationSchema={campaignSchema}
-//             onSubmit={handleSubmit}
-//           >
-//             {({ isSubmitting, values }) => (
-//               <Form className="space-y-6">
-//                 <div>
-//                   <label className="block text-sm font-medium text-gray-700">
-//                     Campaign Name
-//                   </label>
-//                   <Field
-//                     name="name"
-//                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-//                   />
-//                   <ErrorMessage name="name" component="div" className="mt-1 text-sm text-red-600" />
-//                 </div>
-
-//                 <div>
-//                   <label className="block text-sm font-medium text-gray-700">
-//                     Description
-//                   </label>
-//                   <Field
-//                     as="textarea"
-//                     name="description"
-//                     rows="3"
-//                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-//                   />
-//                 </div>
-
-//                 <div>
-//                   <label className="block text-sm font-medium text-gray-700">
-//                     Content
-//                   </label>
-//                   <Field
-//                     as="textarea"
-//                     name="content"
-//                     rows="5"
-//                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-//                   />
-//                   <ErrorMessage name="content" component="div" className="mt-1 text-sm text-red-600" />
-//                 </div>
-
-//                 <div className="grid grid-cols-2 gap-4">
-//                   <div>
-//                     <label className="block text-sm font-medium text-gray-700">
-//                       Delivery Type
-//                     </label>
-//                     <Field
-//                       as="select"
-//                       name="deliveryType"
-//                       className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-//                     >
-//                       <option value="IMMEDIATE">Immediate</option>
-//                       <option value="SCHEDULED">Scheduled</option>
-//                     </Field>
-//                   </div>
-
-//                   {values.deliveryType === 'SCHEDULED' && (
-//                     <>
-//                       <div>
-//                         <label className="block text-sm font-medium text-gray-700">
-//                           Schedule Date
-//                         </label>
-//                         <Field
-//                           type="date"
-//                           name="scheduledDate"
-//                           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-//                         />
-//                         <ErrorMessage name="scheduledDate" component="div" className="mt-1 text-sm text-red-600" />
-//                       </div>
-
-//                       <div>
-//                         <label className="block text-sm font-medium text-gray-700">
-//                           Schedule Time
-//                         </label>
-//                         <Field
-//                           type="time"
-//                           name="scheduledTime"
-//                           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-//                         />
-//                         <ErrorMessage name="scheduledTime" component="div" className="mt-1 text-sm text-red-600" />
-//                       </div>
-//                     </>
-//                   )}
-//                 </div>
-
-//                 <div className="flex justify-end space-x-3">
-//                   <button
-//                     type="button"
-//                     onClick={onClose}
-//                     className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
-//                   >
-//                     Cancel
-//                   </button>
-//                   <button
-//                     type="submit"
-//                     disabled={isSubmitting}
-//                     className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
-//                   >
-//                     {isSubmitting ? 'Creating...' : 'Create Campaign'}
-//                   </button>
-//                 </div>
-//               </Form>
-//             )}
-//           </Formik>
-//         </Dialog.Panel>
-//       </div>
-//     </Dialog>
-//   );
-// };
-
-// export default CampaignForm;

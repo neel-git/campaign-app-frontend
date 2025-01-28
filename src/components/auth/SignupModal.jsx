@@ -15,7 +15,7 @@ const SignupSchema = Yup.object().shape({
   username: Yup.string()
     .min(3, 'Username must be at least 3 characters')
     .required('Username is required'),
-    fullName: Yup.string()
+  fullName: Yup.string()
     .required('Full name is required'),
   email: Yup.string()
     .email('Invalid email address')
@@ -39,10 +39,11 @@ const SignupSchema = Yup.object().shape({
       'Password must contain at least one special character'
     )
     .required('Password is required'),
-    desiredPracticeId: Yup.string()
-    .required('Please select a practice')
+  desiredPracticeId: Yup.string()
+    .required('Please select a practice'),
+  requestedRole: Yup.string()
+    .required('Please select a role')
 });
-
 export const SignupModal = ({ isOpen, onClose, onSwitchToLogin}) => {
   const dispatch = useDispatch();
   const {practices,isLoading} = useSelector(state => state.practices);
@@ -50,7 +51,7 @@ export const SignupModal = ({ isOpen, onClose, onSwitchToLogin}) => {
     const fetchPractices = async () => {
       try {
         dispatch(setLoading());
-        const activePractices = await practiceService.getActivePractices();
+        const activePractices = await practiceService.getPractices();
         dispatch(setPractices(activePractices));
       } catch (error) {
         console.error('Error fetching practices:', error);
@@ -111,7 +112,8 @@ export const SignupModal = ({ isOpen, onClose, onSwitchToLogin}) => {
                     fullName:'',
                     email: '',
                     password: '',
-                    desiredPracticeId:''
+                    desiredPracticeId:'',
+                    requestedRole: ''
                   }}
                   validationSchema={SignupSchema}
                   onSubmit={async (values, { setSubmitting, resetForm }) => {
@@ -121,14 +123,15 @@ export const SignupModal = ({ isOpen, onClose, onSwitchToLogin}) => {
                         full_name: values.fullName,
                         email: values.email,
                         password: values.password,
-                        desired_practice_id: values.desiredPracticeId || null
+                        desired_practice_id: values.desiredPracticeId,
+                        requested_role: values.requestedRole
                       };
                       await authService.signup(formData);
-                      toast.success('Signup successful! Please log in.');
+                      toast.success('Registration request submitted successfully! Please wait for admin approval.');
                       resetForm();
                       onClose();
                     } catch (error) {
-                      toast.error(error.response || 'Signup failed');
+                      toast.error(error.response || 'Registration failed');
                     } finally {
                       setSubmitting(false);
                     }
@@ -240,7 +243,7 @@ export const SignupModal = ({ isOpen, onClose, onSwitchToLogin}) => {
                   htmlFor="desiredPracticeId" 
                   className="block text-sm font-medium text-gray-700"
                 >
-                  Select Practice
+                  Select Practice*
                 </label>
                 <Field
                   as="select"
@@ -271,6 +274,33 @@ export const SignupModal = ({ isOpen, onClose, onSwitchToLogin}) => {
                   </div>
                 )}
               </div>
+              <div>
+                <label 
+                  htmlFor="requestedRole" 
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Select Role *
+                </label>
+                <Field
+                  as="select"
+                  id="requestedRole"
+                  name="requestedRole"
+                  className={`mt-1 block w-full rounded-md border ${
+                  errors.requestedRole && touched.requestedRole 
+                  ? 'border-red-500' 
+                  : 'border-gray-300'
+                  } px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500`}
+                >
+                <option value="">Select a role</option>
+                <option value="ADMIN">Admin</option>
+                <option value="PRACTICE USER">Practice User</option>
+                </Field>
+                {errors.requestedRole && touched.requestedRole && (
+                <div className="mt-1 text-sm text-red-500">
+                {errors.requestedRole}
+              </div>
+              )}
+            </div>
                       <div className="pt-4">
                         <button
                           type="submit"

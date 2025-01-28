@@ -29,6 +29,13 @@ export const campaignSlice = createSlice({
     deleteCampaign: (state, action) => {
       state.campaigns = state.campaigns.filter((c) => c.id !== action.payload);
     },
+    updateCampaignStatus: (state, action) => {
+      const { id, status } = action.payload;
+      const campaign = state.campaigns.find(c => c.id === id);
+      if (campaign) {
+        campaign.status = status;
+      }
+    },
     setLoading: (state) => {
       state.isLoading = true;
     },
@@ -44,6 +51,7 @@ export const {
   addCampaign,
   updateCampaign,
   deleteCampaign,
+  updateCampaignStatus,
   setLoading,
   setError,
 } = campaignSlice.actions;

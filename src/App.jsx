@@ -9,7 +9,7 @@ import { PrivateRoute } from './components/auth/PrivateRoute';
 import {LandingPage} from './components/pages/LandingPage'
 import { LogoutSuccess } from './components/pages/LogoutSuccess';
 import {SuperAdminDashboardPage} from './components/pages/SuperAdminDashboardPage';
-
+import {AdminDashboardPage} from './components/pages/AdminDashboardPage'
 
 const App = () => {
   return (
@@ -27,6 +27,14 @@ const App = () => {
                 </DashboardLayout>
               </PrivateRoute>
             }
+          />
+          <Route 
+            path="/admin-dashboard" 
+            element={
+              <PrivateRoute>
+                <AdminDashboardPage />
+              </PrivateRoute>
+            } 
           />
           <Route 
             path="/super-admin-dashboard" 

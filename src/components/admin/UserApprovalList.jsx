@@ -14,8 +14,9 @@ const UserApprovalList = ({ pendingUsers, onUserActionComplete }) => {
   const handleApprove = async (user) => {
     setIsProcessing(true);
     try {
-      await campaignService.approveUser(user.id, user.requested_practice_id);
-      toast.success(`Approved ${user.name}'s registration`);
+      const requestType = user.current_role ? 'role_change' : 'registration';
+      await authService.approveRequest(user.id, requestType);
+      toast.success(`Approved ${user.full_name}'s ${requestType} request`);
       onUserActionComplete();
     } catch (error) {
       toast.error(error.message || 'Failed to approve user');
@@ -29,8 +30,9 @@ const UserApprovalList = ({ pendingUsers, onUserActionComplete }) => {
 
     setIsProcessing(true);
     try {
-      await campaignService.rejectUser(selectedUser.id, rejectReason);
-      toast.success(`Rejected ${selectedUser.name}'s registration`);
+      const requestType = selectedUser.current_role ? 'role_change' : 'registration';
+      await authService.rejectRequest(selectedUser.id, requestType, rejectReason);
+      toast.success(`Rejected ${selectedUser.full_name}'s ${requestType} request`);
       setShowRejectDialog(false);
       setSelectedUser(null);
       setRejectReason('');
@@ -40,8 +42,18 @@ const UserApprovalList = ({ pendingUsers, onUserActionComplete }) => {
     } finally {
       setIsProcessing(false);
     }
-  };
+  }
 
+  const renderRequestType = (user) => {
+    const type = user.current_role ? 'Role Change' : 'Registration';
+    const colorClass = user.current_role ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800';
+    return (
+      <span className={`px-2 py-1 rounded-full text-xs font-medium ${colorClass}`}>
+        {type}
+      </span>
+    );
+  };
+  
   return (
     <div className="space-y-4">
       <h2 className="text-lg font-medium text-gray-900">Pending Approvals</h2>

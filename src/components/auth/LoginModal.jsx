@@ -82,19 +82,20 @@ export const LoginModal = ({ isOpen, onClose }) => {
                       toast.success('Login successful!');
                       onClose();
                       // Redirect based on role
-                      if (response.role === 'UserRoleType.practice_user') {
+                      if (response.role === "Practice User") {
                         //console.log('Navigating to inbox');
                         navigate('/inbox');
-                      }else if (response.role === 'UserRoleType.admin') {
+                      }else if (response.role === "Admin") {
                         navigate('/admin-dashboard');
-                      } else if (response.role === 'UserRoleType.super_admin') {
+                      } else if (response.role === "Practice by Numbers Support") {
+                        console.log("Navigating to super admin dashboard");
                         navigate('/super-admin-dashboard');
                       }
                     } catch (error) {
                       // Handle different types of errors
                       console.log('Login error',error);
-                      if (error.response?.data) {
-                        toast.error(error.response.data.error || 'Login failed');
+                      if (error) {
+                        toast.error(error.error || 'Login failed');
                       } else if (error.message) {
                         toast.error(error.message);
                       } else {
