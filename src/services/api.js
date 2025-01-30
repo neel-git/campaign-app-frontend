@@ -4,7 +4,7 @@ const API_BASE_URL = "http://localhost:8000/api";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  withCredentials: true, // Important for handling cookies/sessions
+  withCredentials: true,
   headers: {
     "Content-Type": "application/json",
   },
@@ -187,10 +187,7 @@ export const practiceService = {
 export const campaignService = {
   getCampaigns: async () => {
     try {
-      console.log("Making API request to /campaign/");
-      // This will automatically include creator's campaigns
       const response = await api.get("/campaign/my_campaign/");
-      console.log("API response received:", response);
       return response;
     } catch (error) {
       throw error;
@@ -236,6 +233,7 @@ export const campaignService = {
   getCampaignHistory: async (campaignId) => {
     try {
       const response = await api.get(`/campaign/${campaignId}/history/`);
+
       return response.data;
     } catch (error) {
       throw error;

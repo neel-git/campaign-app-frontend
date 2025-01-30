@@ -1,5 +1,5 @@
 // src/components/messages/MessageItem.jsx
-import React, { useState } from 'react';
+import React, { useState,useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { messageService } from '../../services/api';
 import { deleteMessage,markAsRead } from '../../store/slices/messageSlice';
@@ -13,6 +13,7 @@ export const MessageItem = ({ message, onRefresh }) => {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const dispatch = useDispatch();
+  const [localMessage, setLocalMessage] = useState(message); 
 
   const formatDate = (dateString) => {
     try {
@@ -23,11 +24,22 @@ export const MessageItem = ({ message, onRefresh }) => {
     }
   };
 
+  useEffect(() => {
+    setLocalMessage(message);
+  }, [message]);
+
+
   const handleMarkAsRead = async () => {
-    if (!message.is_read) {
+    if (!localMessage.is_read) {
       try {
-        await messageService.markAsRead(message.id);
-        dispatch(markAsRead(message.id));
+        await messageService.markAsRead(localMessage.id);
+        dispatch(markAsRead(localMessage.id));
+        
+        setLocalMessage(prev => ({
+          ...prev,
+          is_read: true
+        }));
+
         setIsDetailOpen(false);
       } catch (error) {
         toast.error('Failed to mark message as read');
@@ -86,12 +98,7 @@ export const MessageItem = ({ message, onRefresh }) => {
       </div>
 
       <MessageDetail
-        message={{
-          ...message,
-          campaignName: message.campaign_name,
-          isRead: message.is_read,
-          receivedAt: message.created_at
-        }}
+        message={localMessage}
         isOpen={isDetailOpen}
         onClose={() => setIsDetailOpen(false)}
         onMarkAsRead={handleMarkAsRead}
@@ -132,55 +139,3 @@ export const MessageItem = ({ message, onRefresh }) => {
     </>
   );
 };
-
-// export const MessageItem = ({ message }) => {
-//   const [isDetailOpen, setIsDetailOpen] = useState(false);
-//   const dispatch = useDispatch();
-
-//   const truncatedContent = message.content.length > 150 
-//     ? `${message.content.slice(0, 150)}...` 
-//     : message.content;
-
-//   const handleMarkAsRead = () => {
-//     if (!message.isRead) {
-//       dispatch(markAsRead(message.id));
-//     }
-//   };
-
-//   return (
-//     <>
-//       <div 
-//         className={`p-4 hover:bg-gray-50 cursor-pointer transition-all duration-300 ${
-//           !message.isRead ? 'bg-blue-50' : ''
-//         }`}
-//         onClick={() => setIsDetailOpen(true)}
-//       >
-//         <div className="flex justify-between items-start">
-//           <div className="flex-1">
-//             <h2 className={`text-lg ${!message.isRead ? 'font-semibold' : 'font-medium'}`}>
-//               {message.campaignName}
-//             </h2>
-//             <p className="text-sm text-gray-500">
-//               {format(new Date(message.receivedAt), 'MMM d, yyyy h:mm a')}
-//             </p>
-//           </div>
-//           {!message.isRead && (
-//             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-//               New
-//             </span>
-//           )}
-//         </div>
-//         <div className="mt-2 text-gray-600">
-//           {truncatedContent}
-//         </div>
-//       </div>
-
-//       <MessageDetail
-//         message={message}
-//         isOpen={isDetailOpen}
-//         onClose={() => setIsDetailOpen(false)}
-//         onMarkAsRead={handleMarkAsRead}
-//       />
-//     </>
-//   );
-// };

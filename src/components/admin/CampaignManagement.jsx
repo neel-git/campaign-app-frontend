@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { PlusCircle, Edit, Trash, History,Send } from 'lucide-react';
 import { Dialog } from '@headlessui/react';
 import { CampaignForm } from './CampaignForm'
+import { CampaignHistoryModal } from './CampaignHistoryModal';
 import { campaignService } from '../../services/api'
 import toast from 'react-hot-toast';
 import { setCampaigns, deleteCampaign, updateCampaignStatus} from '../../store/slices/campaignSlice';
@@ -17,53 +18,24 @@ export const CampaignManagement = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [campaignHistory, setCampaignHistory] = useState([]);
 
   useEffect(() => {
     fetchCampaigns();
   }, []);
 
-  // const fetchCampaigns = async () => {
-  //   try {
-  //     setIsLoading(true);
-  //     const response = await campaignService.getCampaigns();
-  //     if (response?.data) {
-  //       console.log('Fetched campaigns:', response.data); // For debugging
-  //       dispatch(setCampaigns(response.data));
-  //     }
-  //   } catch (error) {
-  //     console.error('Error fetching campaigns:', error);
-  //     toast.error('Failed to fetch campaigns');
-  //     dispatch(setCampaigns([]));
-  //   } finally {
-  //     setIsLoading(false);
-  //   }
-  // };
-
   const fetchCampaigns = async () => {
     try {
       setIsLoading(true);
-      // Add console.log before the API call
-      console.log('Fetching campaigns...');
       
       const response = await campaignService.getCampaigns();
-      // Add detailed logging of the response
-      console.log('Raw API response:', response);
       
-      // Check if response exists and has data property
       if (response && response.data) {
-        console.log('Campaign data:', response.data);
         dispatch(setCampaigns(response.data));
       } else {
-        console.log('No data in response:', response);
         dispatch(setCampaigns([]));
       }
     } catch (error) {
-      // Enhance error logging
-      console.error('Error details:', {
-        message: error.message,
-        response: error.response,
-        data: error.response?.data
-      });
       toast.error('Failed to fetch campaigns');
       dispatch(setCampaigns([]));
     } finally {
@@ -87,10 +59,21 @@ export const CampaignManagement = () => {
       dispatch(updateCampaignStatus({ id: campaignId, status: 'IN_PROGRESS' }));
       await campaignService.sendCampaign(campaignId);
       toast.success('Campaign sent successfully');
-      await fetchCampaigns(); // Refresh to update status
+      await fetchCampaigns();
     } catch (error) {
       toast.error(error.response?.data?.error || 'Failed to send campaign');
       dispatch(updateCampaignStatus({ id: campaignId, status: 'FAILED' }));
+    }
+  };
+
+  const handleViewHistory = async (campaign) => {
+    try {
+      setSelectedCampaign(campaign);
+      const response = await campaignService.getCampaignHistory(campaign.id);
+      setCampaignHistory(response);
+      setShowHistory(true);
+    } catch (error) {
+      toast.error('Failed to fetch campaign history');
     }
   };
 
@@ -107,7 +90,6 @@ export const CampaignManagement = () => {
 
   return (
     <div className="space-y-8">
-      {/* Header Section */}
       <div className="bg-white rounded-xl shadow-sm p-6">
         <div className="flex justify-between items-center">
           <div>
@@ -131,7 +113,6 @@ export const CampaignManagement = () => {
         </div>
       </div>
 
-      {/* Campaigns List */}
       <div className="bg-white rounded-xl shadow-sm overflow-hidden">
         {isLoading ? (
           <div className="p-8 text-center">
@@ -241,10 +222,11 @@ export const CampaignManagement = () => {
                           whileHover={{ scale: 1.1 }}
                           whileTap={{ scale: 0.9 }}
                           className="text-gray-600 hover:text-gray-900"
-                          onClick={() => {
-                            setSelectedCampaign(campaign);
-                            setShowHistory(true);
-                          }}
+                          onClick={() => 
+                            handleViewHistory(campaign)
+                            // setSelectedCampaign(campaign);
+                            // setShowHistory(true);
+                          }
                           title="History"
                         >
                           <History className="w-5 h-5" />
@@ -259,7 +241,6 @@ export const CampaignManagement = () => {
         )}
       </div>
 
-      {/* Campaign Form Modal */}
       <CampaignForm
         isOpen={showNewCampaignForm}
         onClose={() => {
@@ -268,6 +249,17 @@ export const CampaignManagement = () => {
         }}
         campaign={selectedCampaign}
         onSuccess={fetchCampaigns}
+      />
+
+      <CampaignHistoryModal
+              isOpen={showHistory}
+              onClose={() => {
+                setShowHistory(false);
+                setSelectedCampaign(null);
+                setCampaignHistory([]);
+              }}
+              campaign={selectedCampaign}
+              campaignHistory={campaignHistory}
       />
 
       {/* Delete Confirmation Dialog */}

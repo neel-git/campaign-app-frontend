@@ -7,7 +7,7 @@ export const LogoutSuccess = () => {
   useEffect(() => {
     const timer = setTimeout(() => {
       navigate('/');
-    }, 3000);
+    }, 4000);
 
     return () => clearTimeout(timer);
   }, [navigate]);

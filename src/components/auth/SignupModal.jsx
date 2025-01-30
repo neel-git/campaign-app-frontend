@@ -10,7 +10,7 @@ import toast from 'react-hot-toast';
 import { setPractices,setLoading } from '../../store/slices/practiceSlice';
 import { practiceService } from '../../services/api';
 
-// Validation Schema using Yup
+// Validation Schema
 const SignupSchema = Yup.object().shape({
   username: Yup.string()
     .min(3, 'Username must be at least 3 characters')
@@ -226,7 +226,6 @@ export const SignupModal = ({ isOpen, onClose, onSwitchToLogin}) => {
                             {errors.password}
                           </div>
                         )}
-                        {/* Password requirements helper text */}
                         <div className="mt-1 text-xs text-gray-500">
                           Password must contain:
                           <ul className="list-disc pl-4 space-y-1">

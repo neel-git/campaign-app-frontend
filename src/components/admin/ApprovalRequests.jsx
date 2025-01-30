@@ -5,7 +5,7 @@ import { CheckCircle, XCircle } from 'lucide-react';
 import { authService } from '../../services/api'
 import toast from 'react-hot-toast';
 
-export const ApprovalRequests = ({ pendingApprovals, onApprovalComplete }) => {
+export const ApprovalRequests = ({ pendingApprovals, onApprovalComplete, title}) => {
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
@@ -39,7 +39,7 @@ export const ApprovalRequests = ({ pendingApprovals, onApprovalComplete }) => {
 
     try {
       setIsProcessing(true);
-      const requestType = 'registration';
+      const requestType = isRoleChangeRequest(selectedRequest) ? 'role_change' : 'registration';
       await authService.rejectRequest(selectedRequest.id, requestType, rejectReason);
       toast.success(`Rejected ${selectedRequest.user.full_name}'s request`);
       setShowRejectDialog(false);
@@ -55,7 +55,7 @@ export const ApprovalRequests = ({ pendingApprovals, onApprovalComplete }) => {
 
   return (
     <div className="space-y-4 p-6">
-      <h2 className="text-lg font-medium text-gray-900">Pending Approval Requests({pendingApprovals.length})</h2>
+      <h2 className="text-lg font-medium text-gray-900">{title}({pendingApprovals.length})</h2>
       
       {pendingApprovals.length === 0 ? (
         <div className="text-center py-8 bg-gray-50 rounded-lg">
@@ -88,7 +88,7 @@ export const ApprovalRequests = ({ pendingApprovals, onApprovalComplete }) => {
                     </div>
                   )}
                   <div className="text-xs text-gray-500">
-                    Requested: {new Date(request.created_at).toLocaleDateString()}
+                    Requested: {new Date(request.created_at || request.requested_at).toLocaleDateString()}
                   </div>
                 </div>
                 

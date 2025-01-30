@@ -53,7 +53,7 @@ const UserApprovalList = ({ pendingUsers, onUserActionComplete }) => {
       </span>
     );
   };
-  
+
   return (
     <div className="space-y-4">
       <h2 className="text-lg font-medium text-gray-900">Pending Approvals</h2>
@@ -108,7 +108,6 @@ const UserApprovalList = ({ pendingUsers, onUserActionComplete }) => {
         </div>
       )}
 
-      {/* Reject Confirmation Dialog */}
       <Dialog
         open={showRejectDialog}
         onClose={() => {

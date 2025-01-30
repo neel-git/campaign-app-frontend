@@ -35,14 +35,12 @@ export const ApprovalRequestsSection = () => {
     <div className="space-y-6">
       <h2 className="text-2xl font-bold text-gray-900">Approval Requests</h2>
 
-      {/* Registration Requests */}
       <ApprovalRequests
         pendingApprovals={pendingRequests.registration_requests}
         onApprovalComplete={fetchPendingRequests}
         title="Registration Requests"
       />
 
-      {/* Role Change Requests */}
       <ApprovalRequests
         pendingApprovals={pendingRequests.role_change_requests}
         onApprovalComplete={fetchPendingRequests}

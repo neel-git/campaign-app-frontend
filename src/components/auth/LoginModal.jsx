@@ -71,19 +71,14 @@ export const LoginModal = ({ isOpen, onClose }) => {
                   validationSchema={LoginSchema}
                   onSubmit={async (values, { setSubmitting, setFieldError }) => {
                     try {
-                      console.log('Form values:',values);
                       const response = await authService.login({
                         username: values.username,
                         password: values.password
                       });
-                      // console.log('Login response:',response);
                       dispatch(setUser(response));
-                     // console.log('Navigation starting for role:', response.role);
                       toast.success('Login successful!');
                       onClose();
-                      // Redirect based on role
                       if (response.role === "Practice User") {
-                        //console.log('Navigating to inbox');
                         navigate('/inbox');
                       }else if (response.role === "Admin") {
                         navigate('/admin-dashboard');
@@ -92,8 +87,6 @@ export const LoginModal = ({ isOpen, onClose }) => {
                         navigate('/super-admin-dashboard');
                       }
                     } catch (error) {
-                      // Handle different types of errors
-                      console.log('Login error',error);
                       if (error) {
                         toast.error(error.error || 'Login failed');
                       } else if (error.message) {

@@ -87,7 +87,6 @@ export const CampaignForm = ({ isOpen, onClose, campaign, onSuccess}) => {
   const dispatch = useDispatch();
   const practices = useSelector(state => state.practices.practices);
   const user = useSelector(state => state.auth.user);
-  console.log(user);
   const isSuperAdmin = user?.role === "Practice by Numbers Support";
   const [userPractice, setUserPractice] = useState(null);
   const [isLoadingPractice, setIsLoadingPractice] = useState(!isSuperAdmin);
@@ -105,7 +104,6 @@ export const CampaignForm = ({ isOpen, onClose, campaign, onSuccess}) => {
             toast.error('You are not assigned to any practice. Please contact an administrator.');
           }
         } catch (error) {
-          console.error('Error fetching user practice:', error);
           toast.error('Failed to fetch practice information');
         } finally {
           setIsLoadingPractice(false);
@@ -141,7 +139,7 @@ export const CampaignForm = ({ isOpen, onClose, campaign, onSuccess}) => {
       const formattedData = {
         name: values.name,
         content: values.content,
-        description: values.description || null,  // Handle empty description
+        description: values.description || null,
         campaign_type: isSuperAdmin ? 'DEFAULT' : 'CUSTOM',
         delivery_type: values.deliveryType,
         target_roles: values.targetRoles,
@@ -151,39 +149,27 @@ export const CampaignForm = ({ isOpen, onClose, campaign, onSuccess}) => {
         })
       };
 
+      let response;
       if (campaign) {
-        const response = await campaignService.updateCampaign(campaign.id, formattedData);
+        response = await campaignService.updateCampaign(campaign.id, formattedData);
         dispatch(updateCampaign(response));
         toast.success('Campaign updated successfully');
       } else {
-        const response = await campaignService.createCampaign(formattedData);
+        response = await campaignService.createCampaign(formattedData);
         dispatch(addCampaign(response));
         toast.success('Campaign created successfully');
       }
-      await onSuccess(); // This should be fetchCampaigns passed down from parent
+      await onSuccess();
       toast.success(`Campaign ${campaign ? 'updated' : 'created'} successfully`);
       resetForm();
       onClose();
     } catch (error) {
-      console.error('Campaign operation error:', error);
       toast.error(error.response?.data?.error || `Failed to ${campaign ? 'update' : 'create'} campaign`);
     } finally {
       setSubmitting(false);
     }
-    //   const response = await campaignService.createCampaign(formattedData);
-    //   dispatch(addCampaign(response));
-    //   toast.success('Campaign created successfully');
-    //   resetForm();
-    //   onClose();
-    // } catch (error) {
-    //   console.error('Cmapaign creation error:',error);
-    //   toast.error(error.response?.data?.error || 'Failed to create campaign');
-    // } finally {
-    //   setSubmitting(false);
-    // }
   };
 
-  // Role types based on user role
   const roleTypes = isSuperAdmin 
     ? [
         { id: 'Admin', label: 'Admin' },
@@ -303,11 +289,9 @@ export const CampaignForm = ({ isOpen, onClose, campaign, onSuccess}) => {
                       </>
                     ) : (
                       <div className="mt-1 block w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-gray-500">
-                        {/* We first check if we're still loading the practice info */}
                         {isLoadingPractice ? (
                           'Loading practice information...'
                         ) : (
-                          /* Then we check if we have a userPractice */
                           userPractice ? userPractice.name : 'No practice assigned'
                         )}
                       </div>

@@ -28,7 +28,6 @@ export const authSlice = createSlice({
       state.user = action.payload;
       state.isAuthenticated = true;
       state.role = action.payload.role;
-      // save in local storage
       localStorage.setItem("authState", JSON.stringify(state));
     },
     logout: (state) => {

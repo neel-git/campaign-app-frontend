@@ -13,6 +13,12 @@ export const MessageDetail = ({ message, isOpen, onClose, onMarkAsRead, onDelete
       return 'Date unavailable';
     }
   };
+
+  const handleMarkAsRead = async () => {
+    if (!message.is_read) {
+      await onMarkAsRead();
+    }
+  };
   return (
     <Transition appear show={isOpen} as={Fragment}>
       <Dialog as="div" className="relative z-50" onClose={onClose}>
@@ -66,7 +72,7 @@ export const MessageDetail = ({ message, isOpen, onClose, onMarkAsRead, onDelete
                     type="radio"
                     id="markAsRead"
                     checked={message.is_read}
-                    onChange={onMarkAsRead}
+                    onChange={handleMarkAsRead}
                     disabled={message.is_read}
                     className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
                   />
@@ -74,17 +80,11 @@ export const MessageDetail = ({ message, isOpen, onClose, onMarkAsRead, onDelete
                     htmlFor="markAsRead" 
                     className={`text-sm ${message.isRead ? 'text-gray-500' : 'text-gray-700'}`}
                   >
-                    {message.isRead ? 'Message marked as read' : 'Mark as read'}
+                    {message.is_read ? 'Message marked as read' : 'Mark as read'}
                   </label>
                 </div>
               </Dialog.Panel>
             </Transition.Child>
-            <button
-              onClick={onDelete}
-              className="text-sm text-red-600 hover:text-red-800 transition-colors"
-            >
-              Delete Message
-            </button>
           </div>
         </div>
       </Dialog>

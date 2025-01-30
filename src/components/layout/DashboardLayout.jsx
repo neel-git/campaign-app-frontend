@@ -1,5 +1,3 @@
-
-
 // src/components/layout/DashboardLayout.jsx
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -25,7 +23,6 @@ export const DashboardLayout = ({ children }) => {
   const handleChangePassword = () => {
     setIsChangePasswordModalOpen(true);
   }
-  //const displayRole = formatRole(user?.role);
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-100">
@@ -120,4 +117,3 @@ export const DashboardLayout = ({ children }) => {
   );
 };
 
-//border-4 border-dashed border-gray-200 rounded-lg h-96

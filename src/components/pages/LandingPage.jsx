@@ -26,7 +26,6 @@ export const LandingPage = () => {
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
       <Header />
       
-      {/* Hero Section */}
       <section className="pt-32 pb-20 px-4">
         <div className="container mx-auto text-center">
           <h1 
@@ -60,7 +59,6 @@ export const LandingPage = () => {
         </div>
       </section>
 
-      {/* Features Section */}
       <section className="py-20 px-4 bg-gray-50">
         <div className="container mx-auto">
           <h2 className="text-3xl font-bold text-center mb-12">Key Features</h2>
@@ -90,7 +88,6 @@ export const LandingPage = () => {
         </div>
       </section>
 
-      {/* How It Works Section */}
       <section className="py-20 px-4">
         <div className="container mx-auto">
           <h2 className="text-3xl font-bold text-center mb-16">How It Works</h2>
@@ -131,10 +128,9 @@ export const LandingPage = () => {
         </div>
       </section>
 
-      {/* Footer */}
       <footer className="bg-gray-800 text-white py-8">
         <div className="container mx-auto px-4 text-center">
-          <p>&copy; 2024 Practice Management. All rights reserved.</p>
+          <p>&copy; 2025 Practice Management. All rights reserved.</p>
         </div>
       </footer>
     </div>

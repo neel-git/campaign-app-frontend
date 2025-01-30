@@ -8,7 +8,6 @@ import { Dialog } from '@headlessui/react';
 import toast from 'react-hot-toast';
 import { authService,messageService } from '../../services/api';
 import { setLoading, setMessages,setError } from '../../store/slices/messageSlice';
-//import { setError } from '../../store/slices/campaignSlice';
 
 export const MessageInbox = () => {
   const dispatch = useDispatch();
@@ -25,13 +24,9 @@ export const MessageInbox = () => {
   const fetchMessages = async () => {
     try {
       dispatch(setLoading());
-      // Add debug logging
-      console.log('Fetching messages for user:', user?.id);
       const data = await messageService.getMessages();
-      console.log('Received messages:', data);
       dispatch(setMessages(data));
     } catch (error) {
-      console.error('Error fetching messages:', error);
       toast.error('Failed to load messages');
       dispatch(setError(error.message));
     } finally {
@@ -92,7 +87,6 @@ export const MessageInbox = () => {
         </div>
       </div>
 
-      {/* Role Change Confirmation Dialog */}
       <Dialog
         open={showRoleChangeDialog}
         onClose={() => !isSubmitting && setShowRoleChangeDialog(false)}
@@ -136,35 +130,3 @@ export const MessageInbox = () => {
     </div>
   );
 };
-
-
-// return (
-//     <div className="min-h-screen bg-gray-50">
-//       <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-//         <div className="bg-white rounded-lg shadow">
-//           <div className="px-4 py-5 border-b border-gray-200 sm:px-6">
-//             <h1 className="text-lg font-medium leading-6 text-gray-900">
-//               Messages Inbox
-//             </h1>
-//           </div>
-          
-//           <div className="divide-y divide-gray-200">
-//             {isLoading ? (
-//               <>
-//                 <ShimmerEffect />
-//                 <ShimmerEffect />
-//                 <ShimmerEffect />
-//               </>
-//             ) : messages.length === 0 ? (
-//               <p className="p-4 text-center text-gray-500">
-//                 No messages in your inbox
-//               </p>
-//             ) : (
-//               messages.map(message => (
-//                 <MessageItem key={message.id} message={message} />
-//               ))
-//             )}
-//           </div>
-//         </div>
-//       </div>
-//     </div>
