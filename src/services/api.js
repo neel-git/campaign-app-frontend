@@ -30,23 +30,43 @@ const api = axios.create({
   xsrfHeaderName: "X-CSRFToken",
 });
 
-api.interceptors.request.use(async (config) => {
-  if (!['GET', 'HEAD', 'OPTIONS'].includes(config.method.toUpperCase())) {
-      try {
-          await axios.get(`${API_BASE_URL}/auth/get_csrf_token/`, {
-              withCredentials: true
-          });
-          
-          const csrfToken = getCookie('csrftoken');
-          if (csrfToken) {
-              config.headers['X-CSRFToken'] = csrfToken;
+api.interceptors.request.use(
+  async (config) => {
+      if (config.method !== 'get') {
+          try {
+              await axios.get(`${API_BASE_URL}/auth/get_csrf_token/`, {
+                  withCredentials: true
+              });
+              
+              const csrfToken = getCookie('csrftoken');
+              if (csrfToken) {
+                  config.headers["X-CSRFToken"] = csrfToken;
+              }
+          } catch (error) {
+              console.error('Error fetching CSRF token:', error);
           }
-      } catch (error) {
-          console.error('Error fetching CSRF token:', error);
       }
+      return config;
+  },
+  (error) => {
+      return Promise.reject(error);
   }
-  return config;
-});
+);
+
+api.interceptors.response.use(
+  response => response,
+  error => {
+      if (error.response) {
+          // Log the error details for debugging
+          console.error('Response error:', {
+              status: error.response.status,
+              headers: error.response.headers,
+              data: error.response.data
+          });
+      }
+      return Promise.reject(error);
+  }
+);
 
 export const authService = {
   signup: async (userData) => {
