@@ -5,7 +5,7 @@ import * as Yup from 'yup';
 import { Dialog } from '@headlessui/react';
 import { XMarkIcon, CalendarIcon, ClockIcon } from '@heroicons/react/24/outline';
 import { useDispatch, useSelector } from 'react-redux';
-import { addCampaign } from '../../store/slices/campaignSlice';
+import { addCampaign, updateCampaign} from '../../store/slices/campaignSlice';
 import { campaignService,practiceService } from '../../services/api';
 import toast from 'react-hot-toast';
 import { useState,useEffect } from 'react';

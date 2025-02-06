@@ -268,8 +268,6 @@ export const SuperAdminDashboard = () => {
                           className="text-gray-600 hover:text-gray-900"
                           onClick={() => 
                             handleViewHistory(campaign)
-                            // setSelectedCampaign(campaign);
-                            // setShowHistory(true);
                           }
                           title="History"
                         >

@@ -1,41 +1,39 @@
 import axios from "axios";
 
-const API_BASE_URL = "http://localhost:8000/api";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+// const API_BASE_URL = "http://localhost:8000/api";
+
+function getCookie(name) {
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== "") {
+    const cookies = document.cookie.split(";");
+    for (let i = 0; i < cookies.length; i++) {
+      const cookie = cookies[i].trim();
+      if (cookie.substring(0, name.length + 1) === name + "=") {
+        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+        break;
+      }
+    }
+  }
+  return cookieValue;
+}
 
 const api = axios.create({
   baseURL: API_BASE_URL,
   withCredentials: true,
   headers: {
     "Content-Type": "application/json",
+    "X-CSRFToken": getCookie("csrftoken"),
   },
   xsrfCookieName: "csrftoken",
   xsrfHeaderName: "X-CSRFToken",
 });
-
-// api.interceptors.request.use(
-//   (config) => {
-//     // Get the CSRF token from the cookie if it exists
-//     const csrfToken = document.cookie
-//       .split("; ")
-//       .find((row) => row.startsWith("csrftoken="))
-//       ?.split("=")[1];
-
-//     if (csrfToken) {
-//       config.headers["X-CSRFToken"] = csrfToken;
-//     }
-//     return config;
-//   },
-//   (error) => {
-//     return Promise.reject(error);
-//   }
-// );
 
 export const authService = {
   signup: async (userData) => {
     try {
       await api.get("/auth/get_csrf_token/");
       const response = await api.post("/auth/signup/", userData);
-      console.log(response.data);
       return response.data;
     } catch (error) {
       throw error.response?.data || error;
@@ -45,7 +43,6 @@ export const authService = {
   login: async (credentials) => {
     try {
       const response = await api.post("/auth/login/", credentials);
-      console.log("API Response", response.data);
       return response.data;
     } catch (error) {
       throw error.response?.data || error.message;
@@ -87,9 +84,7 @@ export const authService = {
 
   getPendingRequests: async () => {
     try {
-      console.log('Making request to fetch pending requests');
       const response = await api.get("/auth/pending_request/");
-      console.log('Pending requests response:', response);
       return response.data;
     } catch (error) {
       throw error.response?.data || error;
@@ -104,27 +99,6 @@ export const authService = {
       throw error;
     }
   },
-  // login: async (credentials) => {
-  //   try {
-  //     // Send as regular JSON but with sensitive flag
-  //     const response = await api.post(
-  //       "/auth/login/",
-  //       {
-  //         username: credentials.username,
-  //         password: credentials.password,
-  //       },
-  //       {
-  //         headers: {
-  //           "Content-Type": "application/json",
-  //           "X-Sensitive-Data": "true", // Optional flag for sensitive data
-  //         },
-  //       }
-  //     );
-  //     return response.data;
-  //   } catch (error) {
-  //     throw error.response?.data || error;
-  //   }
-  // },
 };
 
 export const practiceService = {
@@ -205,7 +179,10 @@ export const campaignService = {
 
   updateCampaign: async (campaignId, campaignData) => {
     try {
-      const response = await api.put(`/campaign/${campaignId}/`, campaignData);
+      const response = await api.patch(
+        `/campaign/${campaignId}/`,
+        campaignData
+      );
       return response.data;
     } catch (error) {
       throw error;
@@ -233,7 +210,6 @@ export const campaignService = {
   getCampaignHistory: async (campaignId) => {
     try {
       const response = await api.get(`/campaign/${campaignId}/history/`);
-
       return response.data;
     } catch (error) {
       throw error;
@@ -244,7 +220,7 @@ export const campaignService = {
 export const messageService = {
   getMessages: async () => {
     try {
-      const response = await api.get('/message/');
+      const response = await api.get("/message/");
       return response.data;
     } catch (error) {
       throw error;
@@ -267,5 +243,5 @@ export const messageService = {
     } catch (error) {
       throw error;
     }
-  }
+  },
 };
