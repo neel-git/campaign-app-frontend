@@ -18,6 +18,18 @@ function getCookie(name) {
   return cookieValue;
 }
 
+
+const api = axios.create({
+  baseURL: API_BASE_URL,
+  withCredentials: true,
+  headers: {
+    "Content-Type": "application/json",
+    "X-CSRFToken": getCookie("csrftoken"),
+  },
+  xsrfCookieName: "csrftoken",
+  xsrfHeaderName: "X-CSRFToken",
+});
+
 api.interceptors.request.use(async (config) => {
   if (!['GET', 'HEAD', 'OPTIONS'].includes(config.method.toUpperCase())) {
       try {
@@ -34,17 +46,6 @@ api.interceptors.request.use(async (config) => {
       }
   }
   return config;
-});
-
-const api = axios.create({
-  baseURL: API_BASE_URL,
-  withCredentials: true,
-  headers: {
-    "Content-Type": "application/json",
-    "X-CSRFToken": getCookie("csrftoken"),
-  },
-  xsrfCookieName: "csrftoken",
-  xsrfHeaderName: "X-CSRFToken",
 });
 
 export const authService = {
