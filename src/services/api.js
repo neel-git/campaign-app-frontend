@@ -32,23 +32,28 @@ const api = axios.create({
 
 api.interceptors.request.use(
   async (config) => {
-      if (config.method !== 'get') {
-          try {
-              await axios.get(`${API_BASE_URL}/auth/get_csrf_token/`, {
-                  withCredentials: true
-              });
-              
-              const csrfToken = getCookie('csrftoken');
-              if (csrfToken) {
-                  config.headers["X-CSRFToken"] = csrfToken;
-              }
-          } catch (error) {
-              console.error('Error fetching CSRF token:', error);
+      try {
+          const csrfResponse = await axios.get(`${API_BASE_URL}/auth/get_csrf_token/`, {
+              withCredentials: true
+          });
+          
+          const csrfToken = getCookie('csrftoken');
+          if (csrfToken) {
+              config.headers["X-CSRFToken"] = csrfToken;
           }
+          const sessionId = getCookie('sessionid');
+          if (sessionId) {
+              config.headers["Cookie"] = `sessionid=${sessionId}`;
+          } else {
+              console.warn('No session ID found - user might not be logged in');
+          }
+      } catch (error) {
+          console.error('Error setting up request:', error);
       }
       return config;
   },
   (error) => {
+      console.error('Request interceptor error:', error);
       return Promise.reject(error);
   }
 );
@@ -57,12 +62,16 @@ api.interceptors.response.use(
   response => response,
   error => {
       if (error.response) {
-          // Log the error details for debugging
-          console.error('Response error:', {
+          console.error('Authentication Error Details:', {
               status: error.response.status,
               headers: error.response.headers,
-              data: error.response.data
+              data: error.response.data,
+              cookies: document.cookie
           });
+          
+          if (error.response.status === 403) {
+              console.log('User might need to log in again');
+          }
       }
       return Promise.reject(error);
   }
@@ -81,7 +90,12 @@ export const authService = {
 
   login: async (credentials) => {
     try {
+      await api.get("/auth/get_csrf_token/");
       const response = await api.post("/auth/login/", credentials);
+      const sessionId = getCookie('sessionid');
+      if (!sessionId) {
+          console.warn('Login successful but no session ID received');
+      }
       return response.data;
     } catch (error) {
       throw error.response?.data || error.message;
