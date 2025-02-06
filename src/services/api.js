@@ -18,6 +18,24 @@ function getCookie(name) {
   return cookieValue;
 }
 
+api.interceptors.request.use(async (config) => {
+  if (!['GET', 'HEAD', 'OPTIONS'].includes(config.method.toUpperCase())) {
+      try {
+          await axios.get(`${API_BASE_URL}/auth/get_csrf_token/`, {
+              withCredentials: true
+          });
+          
+          const csrfToken = getCookie('csrftoken');
+          if (csrfToken) {
+              config.headers['X-CSRFToken'] = csrfToken;
+          }
+      } catch (error) {
+          console.error('Error fetching CSRF token:', error);
+      }
+  }
+  return config;
+});
+
 const api = axios.create({
   baseURL: API_BASE_URL,
   withCredentials: true,
